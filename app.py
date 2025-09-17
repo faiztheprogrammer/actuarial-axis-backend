@@ -5,23 +5,23 @@ from db import db
 from models.job import Job
 from routes.job_routes import job_routes
 
-# This is a standard Flask app initialization
-app = Flask(__name__)
-CORS(app)
+def create_app():
+    app = Flask(__name__)
+    CORS(app)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    
+    # This ensures routes are registered within the app's context
+    with app.app_context():
+        app.register_blueprint(job_routes)
+        db.create_all() # Ensure tables exist on server startup
 
-# Configure the database
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    return app
 
-# Initialize the database and register blueprints
-db.init_app(app)
-app.register_blueprint(job_routes)
+# This 'app' variable is what Vercel will look for and run
+app = create_app()
 
-@app.route('/api/test', methods=['GET'])
-def test_route():
-    return {"message": "Flask backend is running!"}
-
-# The if __name__ == '__main__': block is not needed for Vercel
-# but doesn't hurt, and is good for local development.
+# This part is for running it locally
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

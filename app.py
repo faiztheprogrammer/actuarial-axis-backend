@@ -12,16 +12,14 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     
-    # This ensures routes are registered within the app's context
     with app.app_context():
         app.register_blueprint(job_routes)
-        db.create_all() # Ensure tables exist on server startup
+        # You might need to create tables if they don't exist
+        # db.create_all() # Comment this out after the first successful run
 
     return app
 
-# This 'app' variable is what Vercel will look for and run
+# This 'app' variable is what Vercel's WSGI server will look for.
 app = create_app()
 
-# This part is for running it locally
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+# The if __name__ == '__main__' is for local development and won't be run on Vercel

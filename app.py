@@ -1,39 +1,28 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
-from config import DATABASE_URI
 from db import db
-from models.job import Job # This import ensures the model is known to SQLAlchemy
-from routes.job_routes import job_routes
+from config import SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS, SQLALCHEMY_ENGINE_OPTIONS
 
 def create_app():
-    """
-    Application Factory Pattern: This is the standard for creating a 
-    configurable and testable Flask application.
-    """
     app = Flask(__name__)
-    CORS(app) # Enable Cross-Origin Resource Sharing for the whole app
+    app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = SQLALCHEMY_TRACK_MODIFICATIONS
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = SQLALCHEMY_ENGINE_OPTIONS or {}
 
-    # Configure the database connection from config.py
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Initialize extensions with the app
+    CORS(app)
     db.init_app(app)
-    
-    # Use app_context to ensure the application is configured before
-    # registering blueprints and creating database tables.
-    with app.app_context():
-        # Register the blueprint and apply the '/api' prefix to all its routes.
-        app.register_blueprint(job_routes, url_prefix='/api')
-        
-        # This will create the 'job' table in your Supabase database if it doesn't exist.
-        db.create_all()
+
+    # register routes after db is initialised
+    from routes.job_routes import job_routes
+    app.register_blueprint(job_routes, url_prefix="/api")
+
+    @app.route("/api/health")
+    def health():
+        return jsonify({"status": "ok"})
 
     return app
 
-# This 'app' variable is what Vercel's serverless environment will look for.
 app = create_app()
 
-# This block is only for local development. It won't run on Vercel.
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,15 +1,18 @@
 import os
 from dotenv import load_dotenv
+from sqlalchemy.pool import NullPool
 
 load_dotenv()
 
-DATABASE_URI = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URI and DATABASE_URI.startswith("postgres://"):
-    DATABASE_URI = DATABASE_URI.replace("postgres://", "postgresql://", 1)
-else:
-    DB_USER = os.getenv('DB_USER')
-    DB_PASSWORD = os.getenv('DB_PASSWORD')
-    DB_HOST = os.getenv('DB_HOST')
-    DB_NAME = os.getenv('DB_NAME')
-    DATABASE_URI = f'mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+SQLALCHEMY_DATABASE_URI = DATABASE_URL
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+SQLALCHEMY_ENGINE_OPTIONS = {
+    "pool_pre_ping": True,
+    "poolclass": NullPool
+}

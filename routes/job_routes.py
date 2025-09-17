@@ -3,22 +3,24 @@ from models.job import Job
 from db import db
 from sqlalchemy import or_, and_
 
-# Create a Blueprint to organize a group of related views and other code.
+# Note: The name 'job_routes' is just an internal variable name.
 job_routes = Blueprint("job_routes", __name__)
 
-# --- All routes should start with '/api' for consistency ---
 
-# Endpoint to GET all jobs AND CREATE a new job
-@job_routes.route("/api/jobs", methods=["GET", "POST"])
+# This single function now handles both GET (all) and POST requests to '/jobs'
+@job_routes.route("/jobs", methods=["GET", "POST"])
 def handle_jobs():
     if request.method == "GET":
         query = Job.query
         
+        # --- Filtering Logic ---
         job_type = request.args.get("job_type")
-        if job_type: query = query.filter(Job.job_type.ilike(f"%{job_type}%"))
+        if job_type and job_type != 'All':
+            query = query.filter(Job.job_type.ilike(f"%{job_type}%"))
 
         location = request.args.get("location")
-        if location: query = query.filter(Job.location.ilike(f"%{location}%"))
+        if location and location != 'All':
+            query = query.filter(Job.location.ilike(f"%{location}%"))
         
         keyword = request.args.get("keyword")
         if keyword:
@@ -29,14 +31,14 @@ def handle_jobs():
         if tags:
             tags_to_filter = [tag.strip() for tag in tags.split(",")]
             tag_conditions = [Job.tags.ilike(f"%{tag}%") for tag in tags_to_filter]
-            if tag_conditions: query = query.filter(and_(*tag_conditions))
+            if tag_conditions:
+                query = query.filter(and_(*tag_conditions))
         
+        # --- Sorting Logic ---
         sort_by = request.args.get('sort')
         if sort_by == 'oldest':
-            # Sort by the 'posting_date' column in ascending order
             query = query.order_by(Job.posting_date.asc())
         else: 
-            # Sort by the 'posting_date' column in descending order(default)
             query = query.order_by(Job.posting_date.desc())
 
         jobs = query.all()
@@ -54,15 +56,16 @@ def handle_jobs():
             posting_date=data.get("posting_date", ""),
             job_type=data.get("job_type", ""),
             tags=data.get("tags", ""),
-            # source is set to 'manual' by default in the model
+            # Allow the source to be passed in from the scraper
+            source=data.get("source", "manual") 
         )
         db.session.add(new_job)
         db.session.commit()
         return jsonify(new_job.to_dict()), 201
 
 
-# Endpoints for a specific job ID
-@job_routes.route("/api/jobs/<int:id>", methods=["GET", "PUT", "PATCH", "DELETE"])
+# This single function handles all actions for a specific job ID
+@job_routes.route("/jobs/<int:id>", methods=["GET", "PUT", "PATCH", "DELETE"])
 def handle_job(id):
     job = Job.query.get(id)
     if job is None:

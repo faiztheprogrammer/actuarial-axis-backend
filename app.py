@@ -24,5 +24,10 @@ def create_app():
 
 app = create_app()
 
+@app.route("/api/ping", methods=["GET"])
+def ping():
+    """Lightweight keep-alive route for uptime monitoring."""
+    return {"status": "ok"}, 200
+
 if __name__ == "__main__":
     app.run(debug=True)

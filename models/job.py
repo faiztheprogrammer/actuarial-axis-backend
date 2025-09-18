@@ -1,6 +1,9 @@
 from db import db
 
 class Job(db.Model):
+    __tablename__ = "job"        # explicitly map to your Supabase table
+    __table_args__ = {"schema": "public"}   # ensure it uses the public schema
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     company = db.Column(db.String(100), nullable=False)
